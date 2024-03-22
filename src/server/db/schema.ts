@@ -16,7 +16,7 @@ export const supportTickets = createTable(
   "support_tickets",
   {
     id: serial("id").primaryKey(),
-    full_name: text('full_name'),
+    fullName: text('full_name'),
     contactEmail: text('contact_email'),
     problemDescription: text('problem_description'),
     createdAt: timestamp('created_at').defaultNow()
