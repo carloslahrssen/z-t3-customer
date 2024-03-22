@@ -19,6 +19,7 @@ export const supportTickets = createTable(
     fullName: text('full_name'),
     contactEmail: text('contact_email'),
     problemDescription: text('problem_description'),
+    subject: text('subject'),
     createdAt: timestamp('created_at').defaultNow()
   }
 )
