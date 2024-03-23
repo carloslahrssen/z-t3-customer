@@ -46,13 +46,12 @@ export default function SupportTicketForm() {
         subject,
       } = values;
 
-      const response = createSupportTickets.mutate({
+      createSupportTickets.mutate({
         fullName,
         contactEmail,
         problemDescription,
         subject,
       });
-      console.log(response);
     } catch (e: unknown) {
       // Report bug as this would be outside a client validation, would be server related
     }
