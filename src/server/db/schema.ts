@@ -1,4 +1,6 @@
+import { relations } from "drizzle-orm";
 import {
+  integer,
   pgEnum,
   pgTableCreator,
   serial,
@@ -24,3 +26,24 @@ export const supportTickets = createTable("support_tickets", {
   createdAt: timestamp("created_at").defaultNow(),
   status: statusEnum("status"),
 });
+
+export const supportTicketsRelations = relations(
+  supportTickets,
+  ({ many }) => ({
+    replies: many(replies),
+  }),
+);
+
+export const replies = createTable("replies", {
+  id: serial("id").primaryKey(),
+  message: text("message"),
+  supportTicketId: integer("support_ticket_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const repliesRelations = relations(replies, ({ one }) => ({
+  supportTickets: one(supportTickets, {
+    fields: [replies.supportTicketId],
+    references: [supportTickets.id],
+  }),
+}));

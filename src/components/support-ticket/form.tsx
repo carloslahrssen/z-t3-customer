@@ -14,15 +14,20 @@ import {
   FormLabel,
   FormMessage,
 } from "../ui/form";
+import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 
 const formSchema = z.object({
   name: z.string().min(1),
   email: z.string().email().min(1),
   subject: z.string().min(1),
-  problem: z.string().min(1).max(256),
+  problem: z.string().min(1).max(500),
 });
 
 export default function SupportTicketForm() {
+  const [showAlert, setShowAlert] = useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
@@ -33,9 +38,31 @@ export default function SupportTicketForm() {
       alert("There was an issue creating your ticket");
     },
     onSuccess: () => {
-      alert("Ticket created!");
+      setShowAlert(true);
+      form.reset(
+        {
+          email: "",
+          name: "",
+          problem: "",
+          subject: "",
+        },
+        { keepDirty: false },
+      );
     },
   });
+
+  //temporary alert - future should be dismissable
+  useEffect(() => {
+    let showAlertTimeout: any;
+
+    if (showAlert) {
+      showAlertTimeout = setTimeout(() => {
+        setShowAlert(false);
+      }, 10000);
+    }
+
+    return () => clearTimeout(showAlertTimeout);
+  }, [showAlert]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     try {
@@ -58,81 +85,111 @@ export default function SupportTicketForm() {
   }
 
   return (
-    <Form {...form}>
-      <form
-        className="flex flex-col gap-4"
-        onSubmit={form.handleSubmit(onSubmit)}
-      >
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel> Full Name </FormLabel>
-              <FormControl>
-                <Input placeholder="Carlos Lahrssen" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-          //   className="grid w-full max-w-sm items-center gap-1.5"
-        />
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel> Email </FormLabel>
-              <FormControl>
-                <Input
-                  type="email"
-                  placeholder="carloslahrssen@gmail.com"
-                  {...field}
+    <>
+      {/* Ideally this would be a reusable banner component that we can then extend to have multiple variations */}
+      {showAlert && (
+        <Alert className="-translate-y-1/26 absolute left-1/2 top-8 w-2/6 -translate-x-1/2 transform">
+          <AlertTitle className="text text-center">
+            Ticket successfully created!
+          </AlertTitle>
+          <AlertDescription className="text-center">
+            Admin only view -
+            <Link href={`/support-tickets-list`} className="underline">
+              Click Here to view the rest of the tickets.
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
+      <div className="">
+        <div className="pb-6">
+          <h1 className="text-5xl font-black text-slate-900">
+            Ticket Creation
+          </h1>
+          <div className="text-muted-foreground">
+            The goal of this is to make a ticket that will be managed by
+            customer support
+          </div>
+        </div>
+        <Form {...form}>
+          <form
+            className="flex flex-col gap-4"
+            onSubmit={form.handleSubmit(onSubmit)}
+          >
+            <div className="grid grid-cols-2 gap-8">
+              <div>
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel> Full Name </FormLabel>
+                      <FormControl>
+                        <Input placeholder="Carlos Lahrssen" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-          //   className="grid w-full max-w-sm items-center gap-1.5"
-        />
-        <FormField
-          control={form.control}
-          name="subject"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel> Subject </FormLabel>
-              <FormControl>
-                <Input placeholder="Issue subject here!" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+              </div>
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel> Email </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="carloslahrssen@gmail.com"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-        <FormField
-          control={form.control}
-          name="problem"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel> Problem Description </FormLabel>
-              <FormDescription className="text-sm text-muted-foreground">
-                Description goes here in lighter text
-              </FormDescription>
-              <FormControl>
-                <div className="grid w-full gap-2">
-                  <Textarea
-                    className="text-pretty"
-                    placeholder="Ticket information here"
-                    {...field}
-                  />
-                  <Button type="submit"> Submit ticket </Button>
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </form>
-    </Form>
+            <FormField
+              control={form.control}
+              name="subject"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel> Subject </FormLabel>
+                  <FormControl>
+                    <Input placeholder="Issue subject here!" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="problem"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel> Problem Description </FormLabel>
+                  <FormDescription className="text-sm text-muted-foreground">
+                    Explain your problem in under 500 characters...
+                  </FormDescription>
+                  <FormControl>
+                    <div className="grid w-full gap-2">
+                      <Textarea
+                        className="text-pretty"
+                        placeholder="Ticket information here"
+                        {...field}
+                      />
+                      <Button type="submit"> Submit ticket </Button>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </form>
+        </Form>
+      </div>
+    </>
   );
 }

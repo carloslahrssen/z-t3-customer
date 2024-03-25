@@ -20,7 +20,11 @@ export const supportTicketsRouter = createTRPCRouter({
       });
     }),
   list: publicProcedure.query(({ ctx }) =>
-    ctx.db.select().from(supportTickets),
+    ctx.db.query.supportTickets.findMany({
+      with: {
+        replies: true,
+      },
+    }),
   ),
   getById: publicProcedure
     .input(

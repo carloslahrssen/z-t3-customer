@@ -1,7 +1,11 @@
-import { inferRouterOutputs } from "@trpc/server";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
 import Head from "next/head";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { StatusButton } from "~/components/support-ticket/status-button";
+import { Button } from "~/components/ui/button";
 import {
   Card,
   CardContent,
@@ -9,11 +13,60 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "~/components/ui/form";
+import { Separator } from "~/components/ui/separator";
+import { Textarea } from "~/components/ui/textarea";
 import { api } from "~/utils/api";
+
+type Status = {
+  value: "todo" | "progress" | "blocked" | "completed";
+  label: string;
+  color: string;
+};
+
+const statuses: Status[] = [
+  {
+    value: "todo",
+    label: "Todo",
+    color: "text-green-600",
+  },
+  {
+    value: "progress",
+    label: "In Progress",
+    color: "text-slate-600",
+  },
+  {
+    value: "completed",
+    label: "Completed",
+    color: "",
+  },
+  {
+    value: "blocked",
+    label: "Blocked",
+    color: "text-red-600",
+  },
+];
+
+const formSchema = z.object({
+  reply: z.string().min(1).max(500),
+});
 
 // Future improvements add routing here so that the selected ticket would be appended to url for easy sharing
 export default function SupportTicketsList() {
-  const [selectedTicketId, setSelectedTicketId] = useState();
+  const queryClient = useQueryClient();
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+  });
+
   const [selectedTicket, setSelectedTicket] = useState({
     id: null,
     subject: null,
@@ -21,26 +74,54 @@ export default function SupportTicketsList() {
     problemDescription: null,
     fullName: null,
     status: null,
+    replies: [],
   });
+
   const list = api.supportTickets.list.useQuery();
-  const { data } = api.supportTickets.getById.useQuery(
-    { id: Number(selectedTicketId) },
-    {
-      enabled: !!selectedTicketId,
+  const repliesMutation = api.replies.create.useMutation({
+    onSuccess: () => {
+      queryClient.invalidateQueries();
+      form.reset({ reply: "" });
     },
-  );
+  });
 
   useEffect(() => {
-    if (data && data?.[0]?.id) {
-      const ticket = data?.[0];
+    if (selectedTicket.id && list.data) {
+      const findSelectedTicket = list.data.find(
+        (ticket) => ticket.id === selectedTicket.id,
+      );
       // @ts-ignore
-      setSelectedTicket({ ...ticket });
+      setSelectedTicket(findSelectedTicket);
     }
-  }, [selectedTicketId, data]);
+  }, [list.data]);
 
   const viewTicket = (supportTicket: any) => {
-    setSelectedTicketId(supportTicket.id);
-    // This method is better than just using the existing card because it will be choosing the updated version of that card, not the one on intiial render
+    setSelectedTicket(supportTicket);
+  };
+
+  const statusColor = useCallback((status: string) => {
+    return statuses.find((fStatus) => fStatus.value === status)?.color;
+  }, []);
+
+  const changeStatus = () => {
+    queryClient.invalidateQueries();
+  };
+
+  const orderedList = useMemo(() => {
+    if (list.data) {
+      return list.data.sort((a, b) => b.id - a.id);
+    }
+
+    return [];
+  }, [list.data]);
+
+  const replyTicket = (data: { reply: string }) => {
+    // mutate
+    console.log(`message to ${selectedTicket.id} ${data.reply}`);
+    repliesMutation.mutate({
+      message: data.reply,
+      supportTicketId: Number(selectedTicket.id),
+    });
   };
 
   if (!list.data) {
@@ -53,17 +134,40 @@ export default function SupportTicketsList() {
         <title> Support Tickets list </title>
       </Head>
       <main className="h-screen">
+        <div className="mb-10 w-full gap-8 bg-slate-800 p-10">
+          <div className="text-center text-xl font-black text-slate-100">
+            Admin Portal
+          </div>
+        </div>
         <div className="grid grid-cols-3 gap-10">
           <ul>
-            {list.data.map((supportTicket) => {
+            {orderedList.map((supportTicket) => {
               return (
-                <li key={supportTicket.id}>
+                <li key={supportTicket.id} className="mb-2">
                   <Card
                     className="hover:cursor-pointer hover:bg-slate-100"
                     onClick={() => viewTicket(supportTicket)}
                   >
                     <CardHeader>
-                      <CardTitle>{supportTicket.subject} </CardTitle>
+                      <CardTitle>
+                        <div className="grid grid-cols-3">
+                          <div className="col-span-2">
+                            {supportTicket.subject}
+                          </div>
+                          <div>
+                            <p
+                              className={`text-gre text-right text-sm font-black uppercase ${statusColor(supportTicket.status ?? "")}`}
+                            >
+                              {
+                                statuses.find(
+                                  (status) =>
+                                    status.value == supportTicket.status,
+                                )?.label
+                              }
+                            </p>
+                          </div>
+                        </div>
+                      </CardTitle>
                       <CardDescription>
                         {supportTicket.contactEmail}
                       </CardDescription>
@@ -89,6 +193,7 @@ export default function SupportTicketsList() {
                         <StatusButton
                           id={selectedTicket.id}
                           ticketStatus={selectedTicket.status}
+                          onChange={() => changeStatus()}
                         />
                       </div>
                     </CardHeader>
@@ -96,6 +201,49 @@ export default function SupportTicketsList() {
                       <div>Name: {selectedTicket.fullName}</div>
                       <div>Email: {selectedTicket.contactEmail}</div>
                       <div>Problem: {selectedTicket.problemDescription}</div>
+                      <Separator className="my-4" />
+                      <div>
+                        <p className="text-lg font-bold">Message History</p>
+                        <ul>
+                          {selectedTicket.replies.map((reply) => {
+                            return (
+                              // @ts-ignore
+                              <li className="mx-2 my-4"> - {reply.message} </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+
+                      <Separator className="my-4" />
+
+                      <div className="pt-4">
+                        <Form {...form}>
+                          <form onSubmit={form.handleSubmit(replyTicket)}>
+                            <FormField
+                              control={form.control}
+                              name="reply"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel> Reply to this ticket </FormLabel>
+                                  <FormControl>
+                                    <div className="grid w-full gap-2">
+                                      <Textarea
+                                        className="text-pretty"
+                                        placeholder="Ticket information here"
+                                        {...field}
+                                      />
+                                      <Button type="submit">
+                                        Reply to ticket
+                                      </Button>
+                                    </div>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </form>
+                        </Form>
+                      </div>
                     </CardContent>
                   </Card>
                 </>

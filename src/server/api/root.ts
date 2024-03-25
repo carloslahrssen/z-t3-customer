@@ -1,5 +1,6 @@
 import { supportTicketsRouter } from "~/server/api/routers/support-tickets";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
+import { repliesRouter } from "./routers/replies";
 
 /**
  * This is the primary router for your server.
@@ -8,6 +9,7 @@ import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
  */
 export const appRouter = createTRPCRouter({
   supportTickets: supportTicketsRouter,
+  replies: repliesRouter,
 });
 
 // export type definition of API

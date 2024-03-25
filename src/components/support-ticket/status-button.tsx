@@ -41,11 +41,17 @@ const statuses: Status[] = [
 export function StatusButton({
   id,
   ticketStatus,
+  onChange,
 }: {
   id: number;
   ticketStatus: Status["value"];
+  onChange: () => void;
 }) {
-  const changeTicketStatus = api.supportTickets.changeStatus.useMutation();
+  const changeTicketStatus = api.supportTickets.changeStatus.useMutation({
+    onSuccess: () => {
+      onChange();
+    },
+  });
   const [open, setOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] =
     useState<Status["value"]>(ticketStatus);

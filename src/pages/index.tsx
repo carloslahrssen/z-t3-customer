@@ -12,11 +12,19 @@ export default function Home() {
       </Head>
       <main className="h-screen">
         <div className="flex h-full">
-          <div className="m-auto flex items-center">
+          <div className="m-auto flex flex-row items-center">
             <SupportTicketForm />
           </div>
         </div>
       </main>
+      <footer className="-translate-y-1/26 absolute bottom-8 left-1/2 w-2/6 -translate-x-1/2 transform">
+        <p className="text-center text-muted-foreground">
+          View tickets
+          <Link className="underline" href={`/support-tickets-list`}>
+            here
+          </Link>
+        </p>
+      </footer>
     </>
   );
 }
