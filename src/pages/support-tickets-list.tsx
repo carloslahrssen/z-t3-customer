@@ -142,7 +142,7 @@ export default function SupportTicketsList() {
           </div>
         </div>
         <div className="grid grid-cols-3 gap-10">
-          <ul>
+          <ul className="mx-8">
             {orderedList.map((supportTicket) => {
               return (
                 <li key={supportTicket.id} className="mb-2">
@@ -179,7 +179,7 @@ export default function SupportTicketsList() {
               );
             })}
           </ul>
-          <div className="col-span-2">
+          <div className="col-span-2 mr-8">
             {!selectedTicket?.id ? (
               <p> Select a card to view it's content </p>
             ) : (
