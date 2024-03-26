@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import Head from "next/head";
@@ -16,7 +17,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -24,6 +24,7 @@ import {
 } from "~/components/ui/form";
 import { Separator } from "~/components/ui/separator";
 import { Textarea } from "~/components/ui/textarea";
+import { type SupportTicketWithReplies } from "~/server/db";
 import { api } from "~/utils/api";
 
 type Status = {
@@ -67,44 +68,37 @@ export default function SupportTicketsList() {
     resolver: zodResolver(formSchema),
   });
 
-  const [selectedTicket, setSelectedTicket] = useState({
-    id: null,
-    subject: null,
-    contactEmail: null,
-    problemDescription: null,
-    fullName: null,
-    status: null,
-    replies: [],
-  });
+  const [selectedTicket, setSelectedTicket] =
+    useState<SupportTicketWithReplies>();
 
   const list = api.supportTickets.list.useQuery();
   const repliesMutation = api.replies.create.useMutation({
-    onSuccess: () => {
-      queryClient.invalidateQueries();
+    onSuccess: async () => {
+      await queryClient.invalidateQueries();
       form.reset({ reply: "" });
     },
   });
 
   useEffect(() => {
-    if (selectedTicket.id && list.data) {
+    if (selectedTicket?.id && list.data) {
       const findSelectedTicket = list.data.find(
-        (ticket) => ticket.id === selectedTicket.id,
+        (ticket) => ticket.id === selectedTicket?.id,
       );
-      // @ts-ignore
+
       setSelectedTicket(findSelectedTicket);
     }
-  }, [list.data]);
+  }, [list.data, selectedTicket?.id]);
 
-  const viewTicket = (supportTicket: any) => {
-    setSelectedTicket(supportTicket);
+  const viewTicket = (supportTicket: unknown) => {
+    setSelectedTicket(supportTicket as SupportTicketWithReplies);
   };
 
   const statusColor = useCallback((status: string) => {
     return statuses.find((fStatus) => fStatus.value === status)?.color;
   }, []);
 
-  const changeStatus = () => {
-    queryClient.invalidateQueries();
+  const changeStatus = async () => {
+    await queryClient.invalidateQueries();
   };
 
   const orderedList = useMemo(() => {
@@ -118,11 +112,11 @@ export default function SupportTicketsList() {
   const replyTicket = (data: { reply: string }) => {
     // mutate
     console.log(
-      `“Would normally send email here with body: ${selectedTicket.id} ${data.reply}`,
+      `“Would normally send email here with body: ${selectedTicket?.id} ${data.reply}`,
     );
     repliesMutation.mutate({
       message: data.reply,
-      supportTicketId: Number(selectedTicket.id),
+      supportTicketId: Number(selectedTicket?.id),
     });
   };
 
@@ -181,7 +175,7 @@ export default function SupportTicketsList() {
           </ul>
           <div className="col-span-2 mr-8">
             {!selectedTicket?.id ? (
-              <p> Select a card to view it's content </p>
+              <p> Select a card to view its content </p>
             ) : (
               selectedTicket.status &&
               selectedTicket.id && (
@@ -207,10 +201,14 @@ export default function SupportTicketsList() {
                       <div>
                         <p className="text-lg font-bold">Message History</p>
                         <ul>
-                          {selectedTicket.replies.map((reply) => {
+                          {selectedTicket.replies.map((reply, index) => {
                             return (
-                              // @ts-ignore
-                              <li className="mx-2 my-4"> - {reply.message} </li>
+                              <li
+                                className="mx-2 my-4"
+                                key={`${selectedTicket.id}-${index}`}
+                              >
+                                - {reply.message}
+                              </li>
                             );
                           })}
                         </ul>

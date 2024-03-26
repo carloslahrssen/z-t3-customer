@@ -34,7 +34,7 @@ export default function SupportTicketForm() {
 
   // Maybe could be a hook in the future
   const createSupportTickets = api.supportTickets.create.useMutation({
-    onError: (e) => {
+    onError: () => {
       alert("There was an issue creating your ticket");
     },
     onSuccess: () => {
@@ -53,7 +53,10 @@ export default function SupportTicketForm() {
 
   //temporary alert - future should be dismissable
   useEffect(() => {
-    let showAlertTimeout: any;
+    let showAlertTimeout: ReturnType<typeof setTimeout> = setTimeout(
+      () => "",
+      10000,
+    );
 
     if (showAlert) {
       showAlertTimeout = setTimeout(() => {
