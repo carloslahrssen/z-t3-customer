@@ -35,7 +35,7 @@ type Status = {
 const statuses: Status[] = [
   {
     value: "todo",
-    label: "Todo",
+    label: "New",
     color: "text-green-600",
   },
   {
@@ -45,7 +45,7 @@ const statuses: Status[] = [
   },
   {
     value: "completed",
-    label: "Completed",
+    label: "Resolved",
     color: "",
   },
   {
@@ -117,7 +117,9 @@ export default function SupportTicketsList() {
 
   const replyTicket = (data: { reply: string }) => {
     // mutate
-    console.log(`message to ${selectedTicket.id} ${data.reply}`);
+    console.log(
+      `“Would normally send email here with body: ${selectedTicket.id} ${data.reply}`,
+    );
     repliesMutation.mutate({
       message: data.reply,
       supportTicketId: Number(selectedTicket.id),

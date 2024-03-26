@@ -22,7 +22,7 @@ type Status = {
 const statuses: Status[] = [
   {
     value: "todo",
-    label: "Todo",
+    label: "New",
   },
   {
     value: "progress",
@@ -30,7 +30,7 @@ const statuses: Status[] = [
   },
   {
     value: "completed",
-    label: "Completed",
+    label: "Resolved",
   },
   {
     value: "blocked",
